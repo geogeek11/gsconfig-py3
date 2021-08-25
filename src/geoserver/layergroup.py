@@ -1,7 +1,6 @@
 # coding: utf-8
 
 from urllib.parse import urljoin
-from urllib import url
 
 from geoserver.support import ResourceInfo, write_string, write_bbox, \
     xml_property, bbox
@@ -94,7 +93,7 @@ class LayerGroup(ResourceInfo):
             self.catalog.service_url,
             path_parts
         )
-        return url(self.catalog.service_url, path_parts)
+        return urljoin(self.catalog.service_url, path_parts)
 
     styles = xml_property("styles", _style_list)
     bounds = xml_property("bounds", bbox)
