@@ -856,6 +856,8 @@ class Catalog:
         try:
             style = Style(self, name, _name(workspace))
             style.fetch()
+            if 'No such style' in style.sld_body or style.sld_body == '' :
+                style = None
         except FailedRequestError:
             style = None
         return style
