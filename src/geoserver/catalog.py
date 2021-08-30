@@ -52,6 +52,7 @@ class Catalog:
         self._version = None
         self._session = requests.Session()
         self._session.auth = (self.username, self.password)
+        self._session.verify = False
 
     @property
     def service_url(self):
