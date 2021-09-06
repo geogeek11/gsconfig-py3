@@ -508,25 +508,69 @@ class Catalog:
             else:
                 message = data
 
-        cs_url = urljoin(
-            self.service_url,
-            "workspaces/{}/coveragestores/{}/{}{}".format(
-                workspace.name, name, store_type, ext
+            cs_url = urljoin(
+                self.service_url,
+                "workspaces/{}/coveragestores/{}/{}{}".format(
+                    workspace.name, name, store_type, ext
+                )
             )
-        )
-        params = {"configure": "first", "coverageName": name}
+            params = {"configure": "first", "coverageName": name}
 
-        try:
-            r = self.session.put(cs_url, data=message, headers=headers,
-                                 params=params)
-            self._cache.clear()
-            if r.status_code != 201:
-                raise UploadError(r.text)
-        finally:
-            if hasattr(message, "close"):
-                message.close()
-            if archive is not None:
-                os.unlink(archive)
+            try:
+                r = self.session.put(cs_url, data=message, headers=headers,
+                                    params=params)
+                self._cache.clear()
+                if r.status_code != 201:
+                    raise UploadError(r.text)
+            finally:
+                if hasattr(message, "close"):
+                    message.close()
+                if archive is not None:
+                    os.unlink(archive)
+
+        else:
+            cs_url = urljoin(
+                self.service_url,
+                "workspaces/{}/coveragestores".format(
+                    workspace.name
+                )
+            )
+            params = {"configure": "first", "coverageName": name}
+            message = '<coverageStore><name>'+name+'</name><url>'+data+'</url><enabled>true</enabled><type>GeoTIFF</type><workspace>'+workspace.name+'</workspace></coverageStore>'
+             
+            try:
+                r = self.session.post(cs_url, data=message, headers= {
+            "Content-type": "application/xml",
+            "Accept": "application/xml"}, params=params)
+                self._cache.clear()
+                if r.status_code != 201:
+                    raise UploadError(r.text)
+            finally:
+                if hasattr(message, "close"):
+                    message.close()
+                if archive is not None:
+                    os.unlink(archive)
+            
+            cs_url = urljoin(
+                self.service_url,
+                "workspaces/{}/coveragestores/{}/coverages".format(
+                    workspace.name, name, 
+                )
+            )
+            message = '{"coverage": {"name": "'+name+'", "enabled": true,}}'
+             
+            try:
+                r = self.session.post(cs_url, data=message, headers= {
+            "Content-type": "application/json",
+            "Accept": "application/xml"})
+                self._cache.clear()
+                if r.status_code != 201:
+                    raise UploadError(r.text)
+            finally:
+                if hasattr(message, "close"):
+                    message.close()
+                if archive is not None:
+                    os.unlink(archive)
 
     def harvest_externalgranule(self, data, store):
         """
@@ -674,7 +718,7 @@ class Catalog:
             raise FailedRequestError(r.text)
 
     def publish_featuretype(self, name, store, native_crs, srs=None,
-                            jdbc_virtual_table=None, native_bbox=None):
+                            jdbc_virtual_table=None, native_bbox=None, native_name=None):
         """
         Publish a featuretype from data in an existing store
         """
@@ -690,6 +734,7 @@ class Catalog:
         feature_type.dirty['name'] = name
         feature_type.dirty['srs'] = srs
         feature_type.dirty['nativeCRS'] = native_crs
+        feature_type.dirty['nativeName'] = name if native_name is None  else native_name
         if native_bbox is not None:
             feature_type.native_bbox = native_bbox
         feature_type.enabled = True
